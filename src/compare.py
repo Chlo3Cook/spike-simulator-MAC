@@ -41,17 +41,36 @@ def summarize(t, x):
         "mean_height": float(np.mean(flat[spikes])) if len(spikes) else np.nan,
         "isi_cv": float(np.std(gaps) / np.mean(gaps)) if len(gaps) > 1 else np.nan,
     }
+# How much each measurement varies naturally between two recordings of the same neuron.
+# Standard deviation over 500 simulated 10 s recordings (fitted model, Poisson spike times).
+NATURAL_SPREAD = {
+    "noise_sd": 0.0042,
+    "drift_sd": 0.0046,
+    "n_spikes": 6.08,
+    "mean_height": 0.053,
+    "isi_cv": 0.134,
+}
+
+
+def score(orig, sim):
+    """How far each simulated measurement is from the original, in units of natural spread."""
+    distances = {key: abs(sim[key] - orig[key]) / NATURAL_SPREAD[key] for key in NATURAL_SPREAD}
+    overall = float(np.sqrt(np.mean(np.square(list(distances.values())))))   # root mean square: big misses count more
+    return distances, overall
+
+
 def compare_files(original_path, simulated_path):
-    """Load both files, check structure, measure both, and print them side by side."""
+    """Load both files, check structure, measure both, score the simulation, and print a report."""
     t_o, x_o = load_recording(original_path)
     t_s, x_s = load_recording(simulated_path)
     structure = check_structure(t_o, t_s)
     orig = summarize(t_o, x_o)
     sim = summarize(t_s, x_s)
+    distances, overall = score(orig, sim)
 
     print("Structure:", structure)
-    print(f"{'measure':<12} {'original':>9} {'simulated':>10} {'difference':>11}")
+    print(f"{'measure':<12} {'original':>9} {'simulated':>10} {'spreads away':>13}")
     for key in orig:
-        diff = (sim[key] - orig[key]) / orig[key] * 100     # percent difference from the original
-        print(f"{key:<12} {orig[key]:>9.3f} {sim[key]:>10.3f} {diff:>10.1f}%")
-    return structure, orig, sim
+        print(f"{key:<12} {orig[key]:>9.3f} {sim[key]:>10.3f} {distances[key]:>13.2f}")
+    print(f"OVERALL SCORE: {overall:.2f}   (lower is closer; about 1.4 = as close as a second recording of the same neuron)")
+    return structure, distances, overall
