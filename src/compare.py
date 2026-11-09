@@ -43,6 +43,7 @@ def summarize(t, x):
     }
 # How much each measurement varies naturally between two recordings of the same neuron.
 # Standard deviation over 500 simulated 10 s recordings (fitted model, Poisson spike times).
+# Recompute with estimate_spread() below.
 NATURAL_SPREAD = {
     "noise_sd": 0.0042,
     "drift_sd": 0.0046,
@@ -50,6 +51,17 @@ NATURAL_SPREAD = {
     "mean_height": 0.053,
     "isi_cv": 0.134,
 }
+
+
+def estimate_spread(n_runs=500, duration=10):
+    """Recompute NATURAL_SPREAD: simulate n_runs recordings with the reference model,
+    measure each one, and return the standard deviation of every measurement."""
+    from reference_simulator import simulate
+    rows = []
+    for seed in range(n_runs):
+        t, x, _ = simulate(duration, seed=seed)
+        rows.append(summarize(t, x))
+    return {key: round(float(np.nanstd([row[key] for row in rows])), 4) for key in rows[0]}
 
 
 def score(orig, sim):
@@ -74,3 +86,10 @@ def compare_files(original_path, simulated_path):
         print(f"{key:<12} {orig[key]:>9.3f} {sim[key]:>10.3f} {distances[key]:>13.2f}")
     print(f"OVERALL SCORE: {overall:.2f}   (lower is closer; about 1.4 = as close as a second recording of the same neuron)")
     return structure, distances, overall
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) != 3:
+        sys.exit("Usage: python src/compare.py ORIGINAL.npz SIMULATED.npz")
+    compare_files(sys.argv[1], sys.argv[2])
