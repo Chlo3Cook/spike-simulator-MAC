@@ -1,0 +1,39 @@
+Real: 10000 samples (10.0 s)   Generated: 60000 samples (60.0 s) -- fresh generation (60 s, seed 0, spike mode 'window')
+
+group  metric                                       real  generated    error    tol  score  result
+--------------------------------------------------------------------------------------------------
+drift  frequency (Hz)                            0.09078     0.0908 0.000239    0.1   99.8  PASS
+drift  drift amplitude                            0.6466     0.6468 0.000229   0.15   99.8  PASS
+drift  offset / amplitude                       0.004749   0.004599 0.000149   0.15   99.9  PASS
+drift  curve RMSE / amp (real t-grid)                  0   0.004147  0.00415   0.25   98.3  PASS
+spike  rate (Hz)                                     4.2        4.1   0.0238    0.3   92.1  PASS
+spike  spike amplitude                             5.016      5.035  0.00365    0.1   96.3  PASS
+spike  decay tau (ms)                              2.983      2.981 0.000709   0.15   99.5  PASS
+spike  mean waveform RMSE / amp                        0    0.01016   0.0102   0.15   93.2  PASS
+spike  inter-spike-interval KS                         0    0.07247   0.0725    0.4   81.9  PASS
+timing mean count / window                           2.1       2.05   0.0238    0.3   92.1  PASS
+timing Fano factor (var/mean)                      1.186      1.259   0.0732    0.6   87.8  PASS
+timing count histogram KS                              0    0.04167   0.0417   0.35   88.1  PASS
+timing window-by-window count MAE                      0          0        0      1  100.0  PASS
+noise  noise std                                  0.2985     0.2985 8.15e-05   0.05   99.8  PASS
+noise  distribution KS                                 0   0.004817  0.00482   0.05   90.4  PASS
+noise  skew & excess kurtosis (max diff)         0.04458     0.0273   0.0719   0.25   71.2  PASS
+noise  whiteness: sqrt(n)*max|acf| lags 1-20        2.07       1.73     0.34    2.5   86.4  PASS
+noise  PSD mean |log10 ratio| (8-500 Hz)               0    0.02605   0.0261   0.08   67.4  PASS
+signal PSD mean |log10 ratio| (4-500 Hz)               0    0.02818   0.0282   0.15   81.2  PASS
+signal drift-free amplitude KS                         0   0.005517  0.00552    0.1   94.5  PASS
+
+Group scores: drift=99.5  spike=92.6  timing=92.0  noise=83.1  signal=87.8
+Checks passed: 20/20
+OVERALL SIMILARITY SCORE: 91.0 / 100
+
+Spikes per 0.5 s window, first 10 s:
+  real      [5, 1, 1, 3, 5, 3, 1, 0, 0, 4, 3, 4, 0, 2, 3, 2, 0, 2, 1, 2]
+  generated [5, 1, 1, 3, 5, 3, 1, 0, 0, 4, 3, 4, 0, 2, 3, 2, 0, 2, 1, 2]
+
+[info, not scored] Pointwise R^2 of the noise-free model (fitted drift + spikes at real spike times) vs real: 0.835
+  (noise is random, so this is the highest pointwise R^2 any model can reach: 1 - noise_var/signal_var)
+
+Robustness over 20 generator seeds (60 s each): mean 88.9, min 82.8, max 91.8
+
+Plot saved to results/comparison.png
