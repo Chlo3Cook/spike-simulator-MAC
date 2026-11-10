@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from compare import load_recording, check_structure, summarize, score
+from compare import load_recording, check_structure, summarize, score, summarize_generated
 
 ORIGINAL = "data/spike_data.npz"
 
@@ -36,3 +36,20 @@ def test_extra_noise_is_caught():
     distances, overall = score(summarize(t, x), summarize(t, noisy))
     assert distances["noise_sd"] > 3             # noise flagged as clearly off
     assert overall > 2                           # and the overall score shows it
+
+
+def test_generated_metrics_are_averaged():
+    def generate_signal(duration_s, seed):
+        rng = np.random.default_rng(seed)
+        t = np.arange(int(duration_s * 1000)) / 1000
+        return t, rng.normal(0, 1, len(t))
+
+    metrics, generated = summarize_generated(generate_signal, duration=1, n_runs=3)
+
+    expected = []
+    for seed in range(3):
+        rng = np.random.default_rng(seed)
+        t = np.arange(1000) / 1000
+        expected.append(summarize(t, rng.normal(0, 1, len(t))))
+    assert metrics["n_spikes"] == np.mean([row["n_spikes"] for row in expected])
+    assert len(generated) == 3

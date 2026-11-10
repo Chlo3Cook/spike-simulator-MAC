@@ -71,6 +71,54 @@ def score(orig, sim):
     return distances, overall
 
 
+def summarize_generated(generate_signal, duration, n_runs=500):
+    """Average measurements from n_runs generated recordings.
+
+    generate_signal must accept duration_s and seed keyword arguments and
+    return the generated time array and voltage array as its first two values.
+    """
+    if n_runs < 1:
+        raise ValueError("n_runs must be at least 1")
+    rows = []
+    structures = []
+    for seed in range(n_runs):
+        generated = generate_signal(duration_s=duration, seed=seed)
+        if len(generated) < 2:
+            raise ValueError("generate_signal must return time and voltage arrays")
+        t, x = generated[:2]
+        t = np.asarray(t, dtype=float)
+        x = np.asarray(x, dtype=float)
+        if t.ndim != 1 or x.ndim != 1 or len(t) != len(x):
+            raise ValueError("generate_signal returned invalid time and voltage arrays")
+        structures.append((t, x))
+        rows.append(summarize(t, x))
+
+    metrics = rows[0].keys()
+    mean_metrics = {}
+    for key in metrics:
+        values = [row[key] for row in rows if np.isfinite(row[key])]
+        mean_metrics[key] = float(np.mean(values)) if values else np.nan
+    return mean_metrics, structures
+
+
+def compare_generated(original_path, generate_signal, n_runs=500):
+    """Compare the original recording with the mean of generated metrics."""
+    t_orig, x_orig = load_recording(original_path)
+    duration = float(t_orig[-1] + np.median(np.diff(t_orig)))
+    orig = summarize(t_orig, x_orig)
+    sim, generated = summarize_generated(generate_signal, duration, n_runs)
+    structure = check_structure(t_orig, generated[0][0])
+    distances, overall = score(orig, sim)
+
+    print("Structure:", structure)
+    print(f"Compared {n_runs} generated recordings; simulated values are metric means.")
+    print(f"{'measure':<12} {'original':>9} {'simulated':>10} {'spreads away':>13}")
+    for key in orig:
+        print(f"{key:<12} {orig[key]:>9.3f} {sim[key]:>10.3f} {distances[key]:>13.2f}")
+    print(f"OVERALL SCORE: {overall:.2f}   (lower is closer; about 1.4 = as close as a second recording of the same neuron)")
+    return structure, sim, distances, overall
+
+
 def compare_files(original_path, simulated_path):
     """Load both files, check structure, measure both, score the simulation, and print a report."""
     t_o, x_o = load_recording(original_path)
